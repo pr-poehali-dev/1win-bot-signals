@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,8 @@ const Index = () => {
   const [currentSignal, setCurrentSignal] = useState<RocketSignal | null>(null);
   const [signalHistory, setSignalHistory] = useState<RocketSignal[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  const [canGenerate, setCanGenerate] = useState(true);
 
   const playNotificationSound = () => {
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -41,8 +43,27 @@ const Index = () => {
     playTone(1000, 0.2, 0.3);
   };
 
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (countdown > 0) {
+      interval = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            setCanGenerate(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [countdown]);
+
   const generateSignal = () => {
+    if (!canGenerate) return;
+    
     setIsGenerating(true);
+    setCanGenerate(false);
     
     setTimeout(() => {
       const multipliers = [1.5, 1.8, 2.0, 2.3, 2.5, 2.8, 3.0, 3.5, 4.0, 5.0];
@@ -59,6 +80,7 @@ const Index = () => {
       setCurrentSignal(newSignal);
       setSignalHistory(prev => [newSignal, ...prev.slice(0, 9)]);
       setIsGenerating(false);
+      setCountdown(180);
     }, 2000);
   };
 
@@ -137,24 +159,40 @@ const Index = () => {
                 </div>
               )}
 
-              <Button 
-                onClick={generateSignal}
-                disabled={isGenerating}
-                className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 transition-all text-lg px-8 py-6"
-                size="lg"
-              >
-                {isGenerating ? (
-                  <>
-                    <Icon name="Loader2" size={24} className="mr-3 animate-spin" />
-                    Анализ...
-                  </>
-                ) : (
-                  <>
-                    <Icon name="Sparkles" size={24} className="mr-3" />
-                    Получить сигнал
-                  </>
+              <div className="space-y-4">
+                <Button 
+                  onClick={generateSignal}
+                  disabled={isGenerating || !canGenerate}
+                  className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 transition-all text-lg px-8 py-6 disabled:opacity-50"
+                  size="lg"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Icon name="Loader2" size={24} className="mr-3 animate-spin" />
+                      Анализ...
+                    </>
+                  ) : !canGenerate ? (
+                    <>
+                      <Icon name="Clock" size={24} className="mr-3" />
+                      Ожидание {Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, '0')}
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="Sparkles" size={24} className="mr-3" />
+                      Получить сигнал
+                    </>
+                  )}
+                </Button>
+                
+                {countdown > 0 && (
+                  <div className="text-center animate-fade-in">
+                    <div className="text-sm text-muted-foreground mb-2">Следующий сигнал через:</div>
+                    <div className="text-3xl font-bold text-primary">
+                      {Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, '0')}
+                    </div>
+                  </div>
                 )}
-              </Button>
+              </div>
             </div>
           </Card>
 
