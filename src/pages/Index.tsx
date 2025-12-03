@@ -16,34 +16,6 @@ const Index = () => {
   const [currentSignal, setCurrentSignal] = useState<RocketSignal | null>(null);
   const [signalHistory, setSignalHistory] = useState<RocketSignal[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [countdown, setCountdown] = useState(0);
-  const [signalTimer, setSignalTimer] = useState(0);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (countdown > 0) {
-      interval = setInterval(() => {
-        setCountdown(prev => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [countdown]);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (signalTimer > 0) {
-      interval = setInterval(() => {
-        setSignalTimer(prev => {
-          if (prev <= 1 && currentSignal) {
-            setCurrentSignal({ ...currentSignal, status: 'expired' });
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [signalTimer, currentSignal]);
 
   const playNotificationSound = () => {
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -71,8 +43,6 @@ const Index = () => {
   };
 
   const generateSignal = () => {
-    if (countdown > 0) return;
-    
     setIsGenerating(true);
     
     setTimeout(() => {
@@ -90,8 +60,6 @@ const Index = () => {
       setCurrentSignal(newSignal);
       setSignalHistory(prev => [newSignal, ...prev.slice(0, 19)]);
       setIsGenerating(false);
-      setCountdown(180);
-      setSignalTimer(60);
     }, 3000);
   };
 
@@ -101,11 +69,7 @@ const Index = () => {
     return 'from-success to-success/70';
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted">
@@ -150,14 +114,7 @@ const Index = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-center gap-2 text-sm">
-                      <Icon name="Clock" size={16} className="text-primary" />
-                      <span className="text-muted-foreground">Осталось времени:</span>
-                      <span className="font-bold text-primary text-xl">{formatTime(signalTimer)}</span>
-                    </div>
-                    <Progress value={(signalTimer / 60) * 100} className="h-2" />
-                  </div>
+
 
                   <div className="pt-4 space-y-3">
                     <div className="flex items-center justify-center gap-6 text-sm">
@@ -186,7 +143,7 @@ const Index = () => {
 
                 <Button 
                   onClick={generateSignal}
-                  disabled={isGenerating || countdown > 0}
+                  disabled={isGenerating}
                   className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 transition-all text-lg px-10 py-6 disabled:opacity-50"
                   size="lg"
                 >
@@ -194,11 +151,6 @@ const Index = () => {
                     <>
                       <Icon name="Loader2" size={24} className="mr-3 animate-spin" />
                       Анализ раундов...
-                    </>
-                  ) : countdown > 0 ? (
-                    <>
-                      <Icon name="Clock" size={24} className="mr-3" />
-                      Следующий через {formatTime(countdown)}
                     </>
                   ) : (
                     <>
