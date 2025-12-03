@@ -26,6 +26,31 @@ const Index = () => {
     profit: 12450
   });
 
+  const playNotificationSound = () => {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    
+    const playTone = (frequency: number, duration: number, startTime: number) => {
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = frequency;
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime + startTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + startTime + duration);
+      
+      oscillator.start(audioContext.currentTime + startTime);
+      oscillator.stop(audioContext.currentTime + startTime + duration);
+    };
+
+    playTone(800, 0.1, 0);
+    playTone(1000, 0.1, 0.1);
+    playTone(1200, 0.15, 0.2);
+  };
+
   const generateSignal = () => {
     const risks: ('low' | 'medium' | 'high')[] = ['low', 'medium', 'high'];
     const minesCounts = { low: 3, medium: 5, high: 7 };
@@ -47,6 +72,7 @@ const Index = () => {
       timestamp: new Date()
     };
 
+    playNotificationSound();
     setSignals(prev => [newSignal, ...prev.slice(0, 9)]);
   };
 
